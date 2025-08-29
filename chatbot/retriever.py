@@ -16,6 +16,7 @@ collection = chroma_client.get_or_create_collection(
     embedding_function=embedding_function
 )
 
+
 def parse_book_summaries(file_path: str):
     """
     Parse a plaintext file of book summaries into (documents, metadatas, ids).
@@ -33,7 +34,6 @@ def parse_book_summaries(file_path: str):
       - The first line after '## Title:' is the book title.
       - The remaining lines in that chunk form the summary.
     """
-
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
     chunks = content.split("## Title:")
@@ -50,22 +50,25 @@ def parse_book_summaries(file_path: str):
         documents.append(summary)
         metadatas.append({"title": title})
         ids.append(f"book_{i}")
+
     return documents, metadatas, ids
+
 
 def populate_chroma():
     """
     Load book summaries from disk and insert them into the Chroma collection
     — but only if the collection is currently empty.
     """
-
     file_path = "data/book_summaries.txt"
     documents, metadatas, ids = parse_book_summaries(file_path)
     existing = collection.count()
+
     if existing == 0:
         collection.add(documents=documents, metadatas=metadatas, ids=ids)
         print(f"Loaded {len(documents)} summaries into ChromaDB.")
     else:
         print(f"ChromaDB already populated with {existing} entries.")
+
 
 def search_books(query: str, n_results: int = 2):
     """
@@ -78,8 +81,8 @@ def search_books(query: str, n_results: int = 2):
     Returns:
         The Chroma query result dict, including documents, metadatas, distances, and ids.
     """
-
     results = collection.query(query_texts=[query], n_results=n_results)
+    
     return results
 
 

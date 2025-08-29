@@ -8,18 +8,17 @@ def speak_text(text):
     """
     Convert a given text string into spoken audio using pyttsx3.
     """
-     
     engine = pyttsx3.init()
     engine.setProperty('rate', 170)
     engine.say(text)
     engine.runAndWait()
+
 
 def run_cli():
     """
     Simple Command-Line Interface (CLI) loop for Smart Librarian.
     Lets the user chat with the AI agent directly from the terminal.
     """
-        
     print("📚 Bine ai venit la Smart Librarian!")
     print("💬 Pune o întrebare despre o carte sau scrie 'exit' pentru a ieși.")
     

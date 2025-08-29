@@ -28,12 +28,12 @@ summary_tool_definition = {
     }
 }
 
+
 def run_agent(user_query: str, model: str = "gpt-4o-mini"):
     """
     Main entry point: takes a user query, finds relevant books,
     asks GPT to recommend one, and (if needed) calls the summary tool.
     """
-
     # --- Step 1: Retrieve candidate books from ChromaDB ---
     results = search_books(user_query)
     matched_titles = [m["title"] for m in results["metadatas"][0]]

@@ -1,4 +1,20 @@
-# Streamlit UI for Smart Librarian: chat (RAG), summary tool calling, DALL·E image gen, and TTS (pyttsx3)
+"""
+Smart Librarian - Streamlit Web UI Entrypoint
+
+This script launches the Smart Librarian application with a Streamlit interface.
+Features included in the UI:
+- Chat interface backed by Retrieval-Augmented Generation (RAG).
+- Book recommendation with automatic title extraction.
+- Automatic tool call to fetch full book summaries.
+- Optional DALL·E 3 illustration generation for the recommended title.
+- Text-to-Speech (TTS) playback of assistant responses (via pyttsx3).
+- Profanity filter on user input.
+- Chat history persistence within the session.
+- Reset button to clear the conversation state.
+
+Run this file with:
+    streamlit run app.py
+"""
 
 import os
 import re
@@ -32,7 +48,6 @@ AUDIO_DIR = "outputs/audio"
 # ──────────────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Smart Librarian", page_icon="📚", layout="centered")
 st.title("📚 Smart Librarian")
-st.caption("RAG + recomandare + rezumat + ilustrație (DALL·E 3) + TTS (pyttsx3) • modele: 4o-mini / 4.1-mini / 4.1-nano")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

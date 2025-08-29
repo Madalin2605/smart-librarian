@@ -44,5 +44,20 @@ book_summaries_dict = {
     )
 }
 
+
 def get_summary_by_title(title: str) -> str:
+    """
+    Retrieve the summary of a book by its exact title.
+
+    Looks up the given title inside `book_summaries_dict` (a dictionary mapping
+    titles to summaries). If the title is not found, returns a default message
+    in Romanian.
+
+    Args:
+        title (str): The exact book title to look up.
+
+    Returns:
+        str: The summary text if found, otherwise
+             "Nu am gasit un rezumat pentru aceasta carte."
+    """
     return book_summaries_dict.get(title, "Nu am gasit un rezumat pentru aceasta carte.")
