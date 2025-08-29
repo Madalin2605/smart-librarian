@@ -1,109 +1,159 @@
-import os, sys, re
+# Streamlit UI for Smart Librarian: chat (RAG), summary tool calling, DALL·E image gen, and TTS (pyttsx3)
+
+import os
+import re
+import sys
 import streamlit as st
 import pyttsx3
 
-# ---- Make project modules importable (chatbot/, tools/, etc.) ----
+# ──────────────────────────────────────────────────────────────────────────────
+# Import project modules (ensure project root is on sys.path)
+# ──────────────────────────────────────────────────────────────────────────────
 ROOT = os.path.abspath(os.path.dirname(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# ---- Reuse your existing modules ----
-from chatbot.retriever import populate_chroma              # Chroma init (idempotent)  [RAG]
-from chatbot.agent import run_agent                        # Your agent (RAG + summary tool)  :contentReference[oaicite:3]{index=3}
-from tools.language_filter import is_clean                 # Profanity gate (better_profanity)  :contentReference[oaicite:4]{index=4}
-from tools.image_generator import generate_book_image            # DALL·E 3 helper you added
+from chatbot.retriever import populate_chroma            
+from chatbot.agent import run_agent                      
+from tools.language_filter import is_clean               
+from tools.image_generator import generate_book_image   
 
-ALLOWED_MODELS = ("gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1-nano")
 
-# --------------------- Streamlit page setup ----------------------
+# ──────────────────────────────────────────────────────────────────────────────
+# Constants / Settings
+# ──────────────────────────────────────────────────────────────────────────────
+ALLOWED_MODELS = ("gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1-nano")  
+IMAGES_DIR = "outputs/images"
+AUDIO_DIR = "outputs/audio"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Streamlit page config
+# ──────────────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Smart Librarian", page_icon="📚", layout="centered")
 st.title("📚 Smart Librarian")
-st.caption("RAG + recomandare + rezumat + imagine + TTS (pyttsx3) • modele: 4o-mini / 4.1-mini / 4.1-nano")
+st.caption("RAG + recomandare + rezumat + ilustrație (DALL·E 3) + TTS (pyttsx3) • modele: 4o-mini / 4.1-mini / 4.1-nano")
 
-# --------------------- One-time init ----------------------------
+
+# ──────────────────────────────────────────────────────────────────────────────
+# One-time initialization (cached): seed Chroma, ensure output folders exist
+# ──────────────────────────────────────────────────────────────────────────────
 @st.cache_resource
-def _init_once():
-    # Seed Chroma once (safe if already populated)  :contentReference[oaicite:5]{index=5}
+def _init_once() -> bool:
     try:
-        populate_chroma()
+        populate_chroma() 
     except Exception as e:
         st.toast(f"Chroma init: {e}", icon="⚠️")
 
-    os.makedirs("outputs/images", exist_ok=True)
-    os.makedirs("outputs/audio", exist_ok=True)
+    os.makedirs(IMAGES_DIR, exist_ok=True)
+    os.makedirs(AUDIO_DIR, exist_ok=True)
     return True
 
 _init_once()
 
-# --------------------- Session state ----------------------------
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Session state (persists across reruns)
+# ──────────────────────────────────────────────────────────────────────────────
 if "messages" not in st.session_state:
-    st.session_state.messages = []          # [{role, content}]
+    st.session_state.messages = []          # chat history: [{role: 'user'|'assistant', content: str}]
 if "last_reply" not in st.session_state:
-    st.session_state.last_reply = ""        # last assistant text
+    st.session_state.last_reply = ""       
 if "last_title" not in st.session_state:
-    st.session_state.last_title = None      # parsed title
+    st.session_state.last_title = None  
 if "last_image_path" not in st.session_state:
     st.session_state.last_image_path = None
 if "last_tts_path" not in st.session_state:
     st.session_state.last_tts_path = None
 
-# --------------------- Sidebar ----------------------------------
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Sidebar: model picker, examples, and RESET CHAT
+# ──────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.subheader("Setări")
+
     model = st.selectbox("Model", ALLOWED_MODELS, index=0)
+
+    # Reset chat button: clears all chat-related session state, then reruns the app
+    if st.button("♻️ Reset chat", help="Curăță istoricul conversației și artefactele"):
+        st.session_state.messages = []
+        st.session_state.last_reply = ""
+        st.session_state.last_title = None
+        st.session_state.last_image_path = None
+        st.session_state.last_tts_path = None
+        
+        try:
+            st.rerun()
+        except Exception:
+            st.experimental_rerun()
+
     st.markdown("---")
     st.markdown("**Exemple:**")
     st.markdown("- „Vreau o carte despre prietenie și magie”")
     st.markdown("- „Ce recomanzi pentru povești de război?”")
 
-# --------------------- Helpers ----------------------------------
-def render_history():
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────────────────────
+def render_history() -> None:
+    """Render chat history as user/assistant bubbles."""
     for m in st.session_state.messages:
         with st.chat_message("user" if m["role"] == "user" else "assistant"):
             st.markdown(m["content"])
 
+
 def extract_title(reply: str) -> str | None:
+    """
+    Extract the recommended title from assistant reply.
+    1) Prefer a 'Recomandare: <titlu>' line
+    2) Fallback to the first non-empty line
+    """
     m = re.search(r"Recomandare:\s*(.+)", reply, flags=re.IGNORECASE)
     if m:
         return m.group(1).strip()
-    # Fallback: first non-empty line (your agent can return only title sometimes)  :contentReference[oaicite:6]{index=6}
     for line in reply.splitlines():
         s = line.strip()
         if s:
             return s
     return None
 
+
 def tts_with_pyttsx3_to_wav(text: str) -> str:
-    """Generate WAV with pyttsx3 and return path; played with st.audio()."""
-    path = os.path.join("outputs", "audio", "tts_output.wav")
+    """
+    Generate a WAV from the given text using pyttsx3 and return the file path.
+    Tip: If you have Romanian voices installed on your OS, pick them by name/id.
+    """
+    path = os.path.join(AUDIO_DIR, "tts_output.wav")
     engine = pyttsx3.init()
     engine.setProperty("rate", 170)
-    # Optionally choose a Romanian voice if installed:
-    # for v in engine.getProperty("voices"):
-    #     if "Romanian" in v.name or "Irina" in v.id:
-    #         engine.setProperty("voice", v.id); break
+
     engine.save_to_file(text, path)
     engine.runAndWait()
     return path
 
-# --------------------- UI: history + input ----------------------
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Main chat UI: show history and input box
+# ──────────────────────────────────────────────────────────────────────────────
 render_history()
 prompt = st.chat_input("Scrie mesajul tău…")
 
 if prompt:
-    # show user msg
+    # 1) Append and render user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # profanity gate BEFORE LLM  :contentReference[oaicite:7]{index=7}
+    # 2) Profanity/safety gate BEFORE calling the LLM
     if not is_clean(prompt):
         reply = "🙏 Te rog păstrează un limbaj respectuos. Îți pot recomanda cărți pe orice temă."
         st.session_state.messages.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):
             st.markdown(reply)
     else:
-        # call agent: RAG → title → (tool) summary  :contentReference[oaicite:8]{index=8}
+        # 3) Call the agent (RAG → recommend title → tool: summary)
         with st.chat_message("assistant"):
             with st.spinner("Gândesc…"):
                 try:
@@ -113,51 +163,57 @@ if prompt:
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
-        # store last reply + parsed title for buttons
+        # 4) Persist parsed artifacts for action buttons
         st.session_state.last_reply = reply
         st.session_state.last_title = extract_title(reply)
         st.session_state.last_image_path = None
         st.session_state.last_tts_path = None
 
-# --------------------- Actions (always rendered) ----------------
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Actions (always visible): Generate image & TTS for last response
+# ──────────────────────────────────────────────────────────────────────────────
 st.markdown("")  # spacing
 
 col1, col2 = st.columns(2)
 title = st.session_state.last_title
 reply = st.session_state.last_reply
 
-# Generate image (DALL·E 3)
+# A) Generate illustration with DALL·E 3 for the detected title
 if col1.button(
     "🖼️ Generează ilustrație",
     disabled=not bool(title),
     key="btn_image",
-    help="DALL·E 3 pentru titlul recomandat"
+    help="Generează o ilustrație inspirată de titlul recomandat (DALL·E 3)"
 ):
     if not title:
         st.info("Nu am putut detecta titlul din răspuns.")
     else:
         try:
-            path = generate_book_image(title, themes=None, size="1024x1024", lang="ro")
+            # BUGFIX: use correct keyword 'language' (not 'lang')
+            path = generate_book_image(title, themes=None, size="1024x1024", language="ro")
             st.session_state.last_image_path = path
             st.success(f"Imagine generată: {path}")
         except Exception as e:
             st.error(f"Eroare generare imagine: {e}")
 
+# Show last generated image, if any
 if st.session_state.last_image_path:
     st.image(st.session_state.last_image_path, caption=f"„{title or ''}” – ilustrație DALL·E 3")
 
-# TTS (pyttsx3 → WAV → audio player)
+# B) Text-to-Speech for last assistant reply
 if col2.button(
     "🔊 Citește răspunsul",
     disabled=not bool(reply),
     key="btn_tts",
-    help="Redă audio ultimul răspuns"
+    help="Redă audio ultimul răspuns al asistentului"
 ):
     try:
-        wav = tts_with_pyttsx3_to_wav(reply)
-        st.session_state.last_tts_path = wav
+        wav_path = tts_with_pyttsx3_to_wav(reply)
+        st.session_state.last_tts_path = wav_path
     except Exception as e:
         st.error(f"Eroare TTS: {e}")
 
+# Audio player (if we have a generated WAV)
 if st.session_state.last_tts_path:
     st.audio(st.session_state.last_tts_path)
