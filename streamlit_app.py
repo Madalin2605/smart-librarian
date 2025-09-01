@@ -206,7 +206,7 @@ if col1.button(
     else:
         try:
             # BUGFIX: use correct keyword 'language' (not 'lang')
-            path = generate_book_image(title, themes=None, size="1024x1024", language="ro")
+            path = generate_book_image(title, themes=None, size="1024x1024", lang="ro")
             st.session_state.last_image_path = path
             st.success(f"Imagine generată: {path}")
         except Exception as e:

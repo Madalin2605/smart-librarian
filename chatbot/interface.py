@@ -47,7 +47,7 @@ def run_cli():
                 gen = input(f"Generez o ilustrație (DALL·E 3) pentru „{title}”? (y/n): ").strip().lower()
                 if gen == "y":
                     try:
-                        image_path = generate_book_image(title, themes=None, size="1024x1024", language="ro")
+                        image_path = generate_book_image(title, themes=None, size="1024x1024", lang="ro")
                         print(f"Imagine generată: {image_path}")
                     except Exception as e:
                         print(f"Eroare generare imagine: {e}")
