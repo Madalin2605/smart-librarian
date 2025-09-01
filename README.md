@@ -8,29 +8,29 @@ It provides personalized book suggestions and an interactive interface using via
 ## Project Structure
 ```
 smart_librarian/
-├── chatbot/                # Core chatbot logic (agent, retriever, interface)
+├── chatbot/                 # Core chatbot logic (agent, retriever, interface)
 │   ├── agent.py             # Manages AI interactions
 │   ├── interface.py         # Handles chatbot responses and user input
 │   ├── retriever.py         # Retrieves context/books from database
 │   └── __init__.py
 │
-├── tools/                  # Tools for chatbot
+├── tools/                   # Tools for chatbot
 │   ├── image_generator.py   # Book cover generation with DALL·E
 │   ├── language_filter.py   # Profanity filter / language checks
 │   ├── summary_tool.py      # Summarization utilities
 │   └── __init__.py
 │
-├── outputs/                # Generated content
-│   ├── audio/              # Text-to-speech audio files
-│   └── images/             # AI-generated book covers
+├── outputs/                 # Generated content
+│   ├── audio/               # Text-to-speech audio files
+│   └── images/              # AI-generated book covers
 │
-├── data/                   # Book datasets / resources
-├── db/                     # ChromaDB vector database
+├── data/                    # Book datasets / resources
+├── db/                      # ChromaDB vector database
 │
-├── streamlit_app.py                  # Streamlit web interface entry point
-├── CLI_app.py                 # CLI interface entry point
-├── requirements.txt        # Python dependencies
-└── README.md               # Project documentation
+├── streamlit_app.py         # Streamlit web interface entry point
+├── CLI_app.py               # CLI interface entry point
+├── requirements.txt         # Python dependencies
+└── README.md                # Project documentation
 
 ```
 
@@ -59,7 +59,7 @@ cd smart-librarian
 ```bash
 python -m venv .venv
 source .venv/bin/activate          # On Linux/Mac
-source .venv\Scripts\activate      # On Windows
+source .venv/Scripts/activate      # On Windows
 ```
 
 ### 3. Install dependencies
@@ -70,8 +70,8 @@ pip install -r requirements.txt
 ### 4. Set environment variable
 Export your OpenAI API key:
 ```bash
-export OPENAI_API_KEY="your_api_key_here"   # Linux/Mac
-setx OPENAI_API_KEY "your_api_key_here"     # Windows
+export OPENAI_API_KEY="your_api_key_here"   # On Linux/Mac
+setx OPENAI_API_KEY "your_api_key_here"     # On Windows
 ```
 
 ---
