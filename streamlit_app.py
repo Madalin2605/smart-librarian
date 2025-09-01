@@ -86,12 +86,12 @@ if "last_tts_path" not in st.session_state:
 # Sidebar: model picker, examples, and RESET CHAT
 # ──────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.subheader("Setări")
+    st.subheader("Settings")
 
-    model = st.selectbox("Model", ALLOWED_MODELS, index=0)
+    model = st.selectbox("Models", ALLOWED_MODELS, index=0)
 
     # Reset chat button: clears all chat-related session state, then reruns the app
-    if st.button("♻️ Reset chat", help="Curăță istoricul conversației și artefactele"):
+    if st.button("♻️ Reset chat", help="Clean up conversation history and artifacts"):
         st.session_state.messages = []
         st.session_state.last_reply = ""
         st.session_state.last_title = None
@@ -104,16 +104,21 @@ with st.sidebar:
             st.experimental_rerun()
 
     st.markdown("---")
-    st.markdown("**Exemple:**")
+    st.markdown("**Examples:**")
     st.markdown("- „Vreau o carte despre prietenie și magie”")
-    st.markdown("- „Ce recomanzi pentru povești de război?”")
+    st.markdown("- „Vreau o carte despre spiritualitate”")
+    st.markdown("- „Ce recomanzi pentru povesti de razboi?”")
+    st.markdown("- „Ce este 1984?”")
+    st.markdown("- „Ai o carte despre animale?”")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
 def render_history() -> None:
-    """Render chat history as user/assistant bubbles."""
+    """
+    Render chat history as user/assistant bubbles.
+    """
     for m in st.session_state.messages:
         with st.chat_message("user" if m["role"] == "user" else "assistant"):
             st.markdown(m["content"])
@@ -153,7 +158,7 @@ def tts_with_pyttsx3_to_wav(text: str) -> str:
 # Main chat UI: show history and input box
 # ──────────────────────────────────────────────────────────────────────────────
 render_history()
-prompt = st.chat_input("Scrie mesajul tău…")
+prompt = st.chat_input("Write your query here…")
 
 if prompt:
     # 1) Append and render user message
@@ -163,14 +168,14 @@ if prompt:
 
     # 2) Profanity/safety gate BEFORE calling the LLM
     if not is_clean(prompt):
-        reply = "🙏 Te rog păstrează un limbaj respectuos. Îți pot recomanda cărți pe orice temă."
+        reply = "Te rog pastreaza un limbaj respectuos. Iti pot recomanda carti pe orice tema."
         st.session_state.messages.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):
             st.markdown(reply)
     else:
         # 3) Call the agent (RAG → recommend title → tool: summary)
         with st.chat_message("assistant"):
-            with st.spinner("Gândesc…"):
+            with st.spinner("Gandesc…"):
                 try:
                     reply = run_agent(prompt, model=model)
                 except Exception as e:
@@ -196,38 +201,38 @@ reply = st.session_state.last_reply
 
 # A) Generate illustration with DALL·E 3 for the detected title
 if col1.button(
-    "🖼️ Generează ilustrație",
+    "🖼️ Generate illustration",
     disabled=not bool(title),
     key="btn_image",
-    help="Generează o ilustrație inspirată de titlul recomandat (DALL·E 3)"
+    help="Generate an illustration inspired by the recommended title"
 ):
     if not title:
-        st.info("Nu am putut detecta titlul din răspuns.")
+        st.info("Nu am putut detecta titlul din raspuns.")
     else:
         try:
             # BUGFIX: use correct keyword 'language' (not 'lang')
             path = generate_book_image(title, themes=None, size="1024x1024", lang="ro")
             st.session_state.last_image_path = path
-            st.success(f"Imagine generată: {path}")
+            st.success(f"Generated image: {path}")
         except Exception as e:
-            st.error(f"Eroare generare imagine: {e}")
+            st.error(f"Image generation error: {e}")
 
 # Show last generated image, if any
 if st.session_state.last_image_path:
-    st.image(st.session_state.last_image_path, caption=f"„{title or ''}” – ilustrație DALL·E 3")
+    st.image(st.session_state.last_image_path, caption=f"„{title or ''}” – ilustration DALL·E 3")
 
 # B) Text-to-Speech for last assistant reply
 if col2.button(
-    "🔊 Citește răspunsul",
+    "🔊 Read the answer",
     disabled=not bool(reply),
     key="btn_tts",
-    help="Redă audio ultimul răspuns al asistentului"
+    help="Play audio of the assistant's last response"
 ):
     try:
         wav_path = tts_with_pyttsx3_to_wav(reply)
         st.session_state.last_tts_path = wav_path
     except Exception as e:
-        st.error(f"Eroare TTS: {e}")
+        st.error(f"TTS error: {e}")
 
 # Audio player (if we have a generated WAV)
 if st.session_state.last_tts_path:

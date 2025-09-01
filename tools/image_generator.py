@@ -70,10 +70,10 @@ def _build_prompt(title: str, themes: Optional[List[str]] = None, lang: str = "r
     t = ", ".join(themes or ["prietenie", "aventură"])
     if lang == "ro":
         return (
-            f"Ilustrație originală, tip poster, inspirată de cartea „{title}”. "
-            f"Nu reproduce sau imita coperți existente sau materiale protejate de drepturi de autor. "
-            f"Evidențiază vizual temele: {t}. "
-            "Stil cinematic, compoziție clară, detalii bogate, luminozitate echilibrată."
+            f"Ilustratie originala, tip poster, inspirata de cartea „{title}”. "
+            f"Nu reproduce sau imita coperti existente sau materiale protejate de drepturi de autor. "
+            f"Evidentiaza vizual temele: {t}. "
+            "Stil cinematic, compozitie clara, detalii bogate, luminozitate echilibrata."
         )
     return (
         f"Original poster-style illustration inspired by the book '{title}'. "
@@ -123,7 +123,9 @@ def generate_book_image(title: str, themes: Optional[List[str]] = None, size: st
     # Step 3: Defensive checks
     if not result or not getattr(result, "data", None) or not result.data:
         raise RuntimeError("API nu a returnat niciun rezultat de imagine.")
+    
     b64 = getattr(result.data[0], "b64_json", None)
+    
     if not b64:
         rp = getattr(result.data[0], "revised_prompt", None)
         raise RuntimeError(f"Nu am primit payload de imagine. (revised_prompt={rp!r})")

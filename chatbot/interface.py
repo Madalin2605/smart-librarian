@@ -20,7 +20,7 @@ def run_cli():
     Lets the user chat with the AI agent directly from the terminal.
     """
     print("📚 Bine ai venit la Smart Librarian!")
-    print("💬 Pune o întrebare despre o carte sau scrie 'exit' pentru a ieși.")
+    print("💬 Pune o intrebare despre o carte sau scrie 'exit' pentru a iesi.")
     
     while True:
         user_input = input("\n Tu: ")
@@ -44,11 +44,11 @@ def run_cli():
 
             title = extract_chosen_title(response)
             if title:
-                gen = input(f"Generez o ilustrație (DALL·E 3) pentru „{title}”? (y/n): ").strip().lower()
+                gen = input(f"Generez o ilustratie pentru „{title}”? (y/n): ").strip().lower()
                 if gen == "y":
                     try:
                         image_path = generate_book_image(title, themes=None, size="1024x1024", lang="ro")
-                        print(f"Imagine generată: {image_path}")
+                        print(f"Imagine generata: {image_path}")
                     except Exception as e:
                         print(f"Eroare generare imagine: {e}")
 
